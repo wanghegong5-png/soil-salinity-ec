@@ -33,10 +33,18 @@ from sklearn.ensemble import (
     RandomForestRegressor,
 )
 from sklearn.linear_model import RidgeCV
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, roc_auc_score
+from sklearn.metrics import (
+     accuracy_score,
+    cohen_kappa_score,
+    mean_absolute_error,
+    mean_squared_error,
+    r2_score,
+    roc_auc_score,
+)
 from sklearn.model_selection import GroupKFold
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVR
 
 ROOT = Path(__file__).resolve().parents[1]
 IN_CSV = ROOT / "data" / "processed" / "samples_with_satellite.csv"
@@ -65,6 +73,7 @@ def get_feature_sets() -> dict[str, list[str]]:
 def get_models():
     return {
         "Ridge": make_pipeline(StandardScaler(), RidgeCV(alphas=np.logspace(-2, 3, 20))),
+        "SVR": make_pipeline(StandardScaler(), SVR(C=1.0, epsilon=0.2)),
         "RF": RandomForestRegressor(n_estimators=300, min_samples_leaf=5, random_state=SEED, n_jobs=-1),
         "ExtraTrees": ExtraTreesRegressor(n_estimators=300, min_samples_leaf=5, random_state=SEED, n_jobs=-1),
         "GradBoost": HistGradientBoostingRegressor(max_depth=4, learning_rate=0.04, max_iter=250, min_samples_leaf=15, random_state=SEED),
@@ -199,11 +208,15 @@ def main() -> None:
             ).fit(X[tr], y_high[tr])
             p_prob[te] = clf.predict_proba(X[te])[:, 1]
         auc = roc_auc_score(y_high, p_prob)
+        y_hat = (p_prob >= 0.5).astype(int)
+        oa = accuracy_score(y_high, y_hat)
+        kappa = cohen_kappa_score(y_high, y_hat)
         top20_prec = float(y_high[np.argsort(p_prob)[::-1][:top_k]].mean())
         screen_rows.append({
             "Feature Set": fname,
             "Spatial 0.1° ROC-AUC": round(auc, 3),
-            "Base Rate": round(base_rate, 3),
+            "OA": round(oa, 3),
+            "Kappa": round(kappa, 3),
             "Precision@Top20%": round(top20_prec, 3),
             "Lift@Top20%": round(top20_prec / base_rate, 2),
         })
