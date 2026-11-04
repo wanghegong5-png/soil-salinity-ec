@@ -1,6 +1,8 @@
 # 松嫩平原西部土壤电导率（EC）遥感估计：空间验证、混杂诊断与自提取特征评估
 
-基于公开实测样本（吉林白城、松原，942 点，$0\text{--}5\text{ cm}$ 表土 $\text{EC}_{1:5}$），复现并审计遥感土壤盐分预测流程，**结合公开 STAC 卫星接口（Microsoft Planetary Computer）独立提取 Landsat-8 裸土期全波段反射率与 Copernicus 30m DEM 地形特征**，系统比较随机划分与空间分块验证下的泛化表现。
+![区域盐渍化风险预测地图（100m）](reports/figures/regional_salinity_risk_map.png)
+
+基于公开实测样本（吉林白城、松原，942 点，$0\text{--}5\text{ cm}$ 表土 $\text{EC}_{1:5}$），复现并审计遥感土壤盐分预测流程，**结合公开 STAC 卫星接口（Microsoft Planetary Computer）独立提取 Landsat-8 裸土期全波段反射率与 Copernicus 30m DEM 地形特征**，系统比较随机划分与空间分块验证下的泛化表现，并输出 100m 分辨率区域盐渍化风险筛查地图（GeoTIFF）。
 
 数据来源：
 - 地面实测样本：Wang et al., 2025, *Scientific Data* 12:1783（[论文](https://www.nature.com/articles/s41597-025-06057-7) / [Zenodo](https://zenodo.org/records/17044261)，MD5 `9c2e663b52c0631ecdb35c5c46d33d2e`）
@@ -15,6 +17,7 @@ python -m venv .venv
 .\.venv\Scripts\python src\baseline.py                   # 阶段 2：基线与空间验证 -> reports/baseline_results.md
 .\.venv\Scripts\python src\extract_satellite_features.py # 阶段 3a：STAC 独立提取 L8 + DEM 特征
 .\.venv\Scripts\python src\stage3_experiments.py         # 阶段 3b：混杂诊断与特征消融 -> reports/stage3_results.md
+.\.venv\Scripts\python src\generate_risk_map.py          # 阶段 4：生成 100m 区域风险地图 -> reports/salinity_risk_map_100m.tif
 ```
 
 ## 核心发现
@@ -51,5 +54,7 @@ src/audit.py                      阶段 1：标签审计（缺失、重复坐�
 src/baseline.py                   阶段 2：基线模型 × 随机/空间分块/跨市留出验证
 src/extract_satellite_features.py 阶段 3a：通过 STAC 自动拉取 Copernicus DEM 与 16 景 Landsat-8
 src/stage3_experiments.py         阶段 3b：TIR 季节温差混杂诊断、特征消融与高盐风险筛查评估
+src/generate_risk_map.py          阶段 4：生成 100m 区域盐渍化风险预测 GeoTIFF 与三联对比图
+reports/salinity_risk_map_100m.tif 100m 双波段预测栅格（Band 1: EC1:5, Band 2: 高盐风险概率）
 reports/                          自动生成的 Markdown 实验报告与图表
 ```
